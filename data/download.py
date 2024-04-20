@@ -14,8 +14,8 @@ categories = [
 # "book",
 # "bottle",
 # "camera",
-# "cereal_box",
-"chair",
+"cereal_box",
+# "chair",
 # "cup",
 # "laptop",
 # "shoe"
@@ -30,9 +30,9 @@ if __name__ == "__main__":
   
     parser.add_argument(
         '--c',
-        nargs='+',
+        nargs='+', # multiple categories can be passed in space separated
         default=categories,
-        help = "categories to be generated"
+        help = "categories to be generated" # --help will show this message
     )
     opt = parser.parse_args()
 
