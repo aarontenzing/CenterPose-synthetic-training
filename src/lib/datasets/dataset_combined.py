@@ -1011,7 +1011,7 @@ class ObjectPoseDataset(data.Dataset):
 
             # objectron
             else:
-                pts_ori = np.array(ann['projected_cuboid'])
+                pts_ori = np.array(ann['projection'])
                 
 
             # Only apply rotation on gt annotation when symmetry exists

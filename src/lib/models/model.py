@@ -94,6 +94,7 @@ def save_model(path, epoch, model, optimizer=None):
         state_dict = model.state_dict()
     data = {'epoch': epoch,
             'state_dict': state_dict}
+            
     if not (optimizer is None):
         data['optimizer'] = optimizer.state_dict()
 
@@ -103,3 +104,4 @@ def save_model(path, epoch, model, optimizer=None):
     except:
         # For old version
         torch.save(data, path)
+        print("Saving to path: ", path)

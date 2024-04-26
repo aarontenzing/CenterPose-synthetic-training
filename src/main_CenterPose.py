@@ -83,29 +83,37 @@ def main(opt):
     print('Starting training...')
     best = 1e10
     for epoch in range(start_epoch + 1, opt.num_epochs + 1):
+
         mark = epoch if opt.save_all else 'last'
         log_dict_train, _, log_imgs = trainer.train(epoch, train_loader)
         logger.write('epoch: {} | '.format(epoch))  # txt logging
+
         for k, v in log_dict_train.items():
             logger.scalar_summary('train_{}'.format(k), v, epoch)  # tensorboard logging
             logger.write('train_{} {:8f} | '.format(k, v))  # txt logging
+
         logger.img_summary('train', log_imgs, epoch)
+
+        # validation
         if opt.val_intervals > 0 and epoch % opt.val_intervals == 0:
-            save_model(os.path.join(opt.save_dir, f'{opt.c}_{mark}.pth'),
-                       epoch, model, optimizer)
+        
+            save_model(os.path.join(opt.save_dir, f'{opt.c}_{mark}.pth'), epoch, model, optimizer)
             with torch.no_grad():
                 log_dict_val, preds, log_imgs = trainer.val(epoch, val_loader)
             for k, v in log_dict_val.items():
                 logger.scalar_summary('val_{}'.format(k), v, epoch)
                 logger.write('val_{} {:8f} | '.format(k, v))
             logger.img_summary('val', log_imgs, epoch)
+
+            # best model saves
             if log_dict_val[opt.metric] < best:
                 best = log_dict_val[opt.metric]
-                save_model(os.path.join(opt.save_dir, f'{opt.c}_best.pth'),
-                           epoch, model)
-            # else:
-            save_model(os.path.join(opt.save_dir, f'{opt.c}_last.pth'),
-                       epoch, model, optimizer)
+                print("best model saved!!!!")
+                save_model(os.path.join("/home/tenzing/CenterPose-synthetic-training/models", f'{opt.c}_best.pth'), epoch, model)
+            else:
+                print("no improvement")
+            # save_model(os.path.join(opt.save_dir, f'{opt.c}_last.pth'), epoch, model, optimizer)
+            # print(f"Last model saved: {os.path.join("/home/tenzing/CenterPose-synthetic-training/models", f'{opt.c}_last.pth')}")
         logger.write('\n\n')
 
         if epoch in opt.lr_step:
@@ -115,6 +123,12 @@ def main(opt):
             print('Drop LR to', lr)
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
+    
+    # final model saves
+    if opt.save_all:
+        print('Saved final model')
+        save_model(os.path.join("/home/tenzing/CenterPose-synthetic-training/models", f'{opt.c}_final.pth'), epoch, model, optimizer)
+
     logger.close()
 
 
@@ -134,8 +148,8 @@ if __name__ == '__main__':
 
     # Training param
     opt.exp_id = f'objectron_{opt.c}_{opt.arch}'
-    opt.num_epochs = 1
-    opt.val_intervals = 5
+    opt.num_epochs = 5
+    opt.val_intervals = 2
     opt.lr_step = '90,120'
     opt.batch_size = 4
     opt.lr = 6e-5
