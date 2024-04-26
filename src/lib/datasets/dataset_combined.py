@@ -20,7 +20,7 @@ import math
 import copy
 import scipy.stats as stats
 
-import albumentations as A
+# import albumentations as A
 
 from scipy.spatial.transform import Rotation as R
 
@@ -111,19 +111,28 @@ class ObjectPoseDataset(data.Dataset):
                       [1, 3], [1, 5], [3, 7], [5, 7]]
 
         # Todo: need to fix the path name
-        if opt.tracking_task == True:
-            self.data_dir = os.path.join(opt.data_dir, 'outf_all')
-        else:
-            self.data_dir = os.path.join(opt.data_dir, 'outf')
+        #if opt.tracking_task == True:
+        #    self.data_dir = os.path.join(opt.data_dir, 'outf_all')
+        #else:
+        #    self.data_dir = os.path.join(opt.data_dir, 'outf')
+
 
         # # Debug only
         # self.data_dir = os.path.join(opt.data_dir, 'outf_all_test')
 
-        self.img_dir = os.path.join(self.data_dir, f"{opt.c}_{split}")
+
+        if split == 'train':
+            self.img_dir = "data/synthetic_data/train/"
+            self.data_dir = "data/synthetic_data/train"
+            with open("data/synthetic_data/anno.json") as f:
+                        self.json_data = json.load(f)
 
         # Todo: take the test split as validation
-        if split == 'val' and not os.path.isdir(self.img_dir):
-            self.img_dir = os.path.join(self.data_dir, f"{opt.c}_test")
+        if split == 'val':
+            self.img_dir = "data/synthetic_data/val/"
+            self.data_dir = "/data/synthetic_data/val"
+            with open("data/synthetic_data/anno.json") as f:
+                        self.json_data = json.load(f) 
 
         self.max_objs = 10
         self._data_rng = np.random.RandomState(123)
@@ -171,23 +180,25 @@ class ObjectPoseDataset(data.Dataset):
                 opt_detector.load_model = f"../models/CenterPose/cup_cup_v1_sym_12_140.pth"
                 self.detector_cup = Detector_CenterPose(opt_detector)
 
-        print(f'==> initializing objectron {opt.c}_{split} data.')
+        print(f'==> initializing Synthetic {opt.c}_{split} data.')
 
-        #   Copy from DOPE code
-        def loadimages(root, datastyle="json", extensions=['png']):
+        #   Copy from DOPE code 
+
+        # Functions loads images and their corresponding JSON annotations.
+        def loadimages(root, datastyle="json", extensions=['png','jpg']):
             imgs = []
             loadimages.extensions = extensions
 
             def add_json_files(path, ):
                 for ext in loadimages.extensions:
                     for imgpath in glob.glob(path + "/*.{}".format(ext.replace('.', ''))):
-                        if exists(imgpath) and exists(imgpath.replace(ext, "json")):
+
+                        if exists(imgpath): #and exists(imgpath.replace(ext, "json")):
                             # Save img_path, video_id, frame_id, json_path
                             video_id = os.path.split(os.path.split(imgpath)[0])[1]
                             frame_id = os.path.splitext(os.path.basename(imgpath))[0]
 
-                            imgs.append((imgpath, video_id, frame_id,
-                                         imgpath.replace(ext, "json")))
+                            imgs.append((imgpath, video_id, frame_id, "data/synthetic_data/anno.json")) 
 
             def explore(path):
                 if not os.path.isdir(path):
@@ -204,6 +215,7 @@ class ObjectPoseDataset(data.Dataset):
 
             return imgs
 
+        # loads the images from the directory (path)
         def load_data(path, extensions):
             imgs = loadimages(path, extensions=extensions)
             return imgs
@@ -295,9 +307,19 @@ class ObjectPoseDataset(data.Dataset):
 
         path_img, video_id, frame_id, path_json = self.images[index]
         img_path = path_img
+
+        index_img = img_path.split('/')[-1].split('.')[0] # only keep img number
+
+        # path json always the same
         with open(path_json) as f:
             anns = json.load(f)
-        num_objs = min(len(anns['objects']), self.max_objs)
+            anns = anns[int(index_img)]
+            
+
+        # Anns are the annotations for all the images. 
+        # num_objs = min(len(anns['objects']), self.max_objs)
+        num_objs = min(len(anns), self.max_objs)
+        num_objs = 1
 
         try:
             img = cv2.imread(img_path)
@@ -322,6 +344,7 @@ class ObjectPoseDataset(data.Dataset):
             height, width = img.shape[0], img.shape[1]
         except:
             return None
+        
         c_ori = np.array([img.shape[1] / 2., img.shape[0] / 2.], dtype=np.float32)
         s_ori = max(img.shape[0], img.shape[1]) * 1.0
         rot = 0
@@ -364,6 +387,8 @@ class ObjectPoseDataset(data.Dataset):
         else:
             # No symmetry
             num_symmetry = 1
+
+        num_symmetry = 1 # negeer dit!!!!
 
         # All the gt info:
         hm = np.zeros((num_symmetry, self.num_classes, output_res, output_res), dtype=np.float32)
@@ -954,26 +979,40 @@ class ObjectPoseDataset(data.Dataset):
         # </editor-fold>
 
         # <editor-fold desc="Step2: Work on the current frame">
-        cam_projection_matrix = anns['camera_data']['camera_projection_matrix']
+        # cam_projection_matrix = anns['camera_data']['camera_projection_matrix']
+
+
         for k in range(num_objs):
-            ann = anns['objects'][k]
+            # ann = anns['objects'][k]
+            ann = anns
+            
 
-            # Todo: Only for chair category for now
-            if 'symmetric' in ann:
-                if ann['symmetric'] == 'True':
-                    num_symmetry = 4
-                else:
-                    num_symmetry = 1
+            # # Todo: Only for chair category for now
+            # if 'symmetric' in ann:
+            #     if ann['symmetric'] == 'True':
+            #         num_symmetry = 4
+            #     else:
+            #         num_symmetry = 1
 
-            if self.opt.c == 'cup':
-                if self.opt.tracking_task == True and \
-                        ((self.opt.mug == False and ann_pre['mug'] == True) or \
-                         (self.opt.mug == True and ann_pre['mug'] == False)):
-                    continue
+            # if self.opt.c == 'cup':
+            #     if self.opt.tracking_task == True and \
+            #             ((self.opt.mug == False and ann_pre['mug'] == True) or \
+            #              (self.opt.mug == True and ann_pre['mug'] == False)):
+            #         continue
 
             # Todo: Fixed as 0 for now
             cls_id = 0
-            pts_ori = np.array(ann['projected_cuboid'])
+            # pts_ori = np.array(ann['projected_cuboid'])
+
+            image_number = int(img_path.split('/')[-1].split('.')[0])
+            if image_number <= len(self.json_data):
+                pts_ori = np.array(ann['projection'])
+                ann["scale"] = ann['whd']
+
+            # objectron
+            else:
+                pts_ori = np.array(ann['projected_cuboid'])
+                
 
             # Only apply rotation on gt annotation when symmetry exists
             for id_symmetry in range(num_symmetry):

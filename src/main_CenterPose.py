@@ -35,6 +35,7 @@ def main(opt):
 
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
+    print(opt.device)
 
     print('Creating model...')
     model = create_model(opt.arch, opt.heads, opt.head_conv, opt=opt)
@@ -54,6 +55,8 @@ def main(opt):
         val_dataset_subset = torch.utils.data.Subset(val_dataset, range(0, len(val_dataset), 15))
     else:
         val_dataset_subset = val_dataset
+
+    # print("val dataset indexed 0: ", val_dataset[0])
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset_subset,
@@ -123,18 +126,18 @@ if __name__ == '__main__':
     opt = opt.parser.parse_args()
 
     # Local configuration
-    opt.c = 'bike'
-    opt.arch='dlav1_34'
+    opt.c = 'cereal'
+    opt.arch='res_101'
     opt.obj_scale = True
     opt.obj_scale_weight = 1
     opt.mug = False
 
     # Training param
     opt.exp_id = f'objectron_{opt.c}_{opt.arch}'
-    opt.num_epochs = 140
+    opt.num_epochs = 1
     opt.val_intervals = 5
     opt.lr_step = '90,120'
-    opt.batch_size = 16
+    opt.batch_size = 4
     opt.lr = 6e-5
     opt.gpus = '0'
     opt.num_workers = 4
@@ -143,8 +146,8 @@ if __name__ == '__main__':
     opt.save_all = True
 
     # # To continue
-    # opt.resume = True
-    # opt.load_model = ""
+    opt.resume = True
+    opt.load_model = "models/cereal_box_resnet_140.pth"
 
     # Copy from parse function from opts.py
     opt.gpus_str = opt.gpus

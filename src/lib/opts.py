@@ -36,7 +36,7 @@ class opts(object):
                                       'or "webcam"')
         self.parser.add_argument('--show_axes', action='store_true',
                                  help='Whether to show axes in demo mode (which will requrire the OpenCV way return)')
-        self.parser.add_argument('--demo_save', default='../demo/',
+        self.parser.add_argument('--demo_save', default='exp/',
                                  help='path to save the results')
         self.parser.add_argument('--load_model', default='',
                                  help='path to pretrained model')
@@ -74,7 +74,7 @@ class opts(object):
                                  help='whether to use paper display (blue edges & show axes)')
 
         # Model
-        self.parser.add_argument('--arch', default='dla_34',
+        self.parser.add_argument('--arch', default='res_101',
                                  help='model architecture. Currently tested'
                                       'res_101 | dla_34 | dlav1_34 ')
         self.parser.add_argument('--head_conv', type=int, default=-1,
