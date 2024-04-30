@@ -35,7 +35,6 @@ def main(opt):
 
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     opt.device = torch.device('cuda' if opt.gpus[0] >= 0 else 'cpu')
-    print(opt.device)
 
     print('Creating model...')
     model = create_model(opt.arch, opt.heads, opt.head_conv, opt=opt)
@@ -44,6 +43,9 @@ def main(opt):
     if opt.load_model != '':
         model, optimizer, start_epoch = load_model(
             model, opt.load_model, optimizer, opt.resume, opt.lr, opt.lr_step)
+        
+    print("Optimizer:")
+    print(optimizer, opt.lr, opt.lr_step)
 
     Trainer = train_factory[opt.task]
     trainer = Trainer(opt, model, optimizer)
@@ -141,15 +143,16 @@ if __name__ == '__main__':
 
     # Local configuration
     opt.c = 'cereal'
-    opt.arch='res_101'
+    opt.arch = 'res_101' # use resnet for feature extraction
     opt.obj_scale = True
     opt.obj_scale_weight = 1
     opt.mug = False
 
     # Training param
-    opt.exp_id = f'objectron_{opt.c}_{opt.arch}'
-    opt.num_epochs = 5
-    opt.val_intervals = 2
+    opt.task = 'object_pose' # dir containing experiment dirs 
+    opt.exp_id = f'objectron_{opt.c}_{opt.arch}' # dir contains logs and models
+    opt.num_epochs = 10
+    opt.val_intervals = 1
     opt.lr_step = '90,120'
     opt.batch_size = 4
     opt.lr = 6e-5
@@ -159,7 +162,7 @@ if __name__ == '__main__':
     opt.debug = 5
     opt.save_all = True
 
-    # # To continue
+    # To continue
     opt.resume = True
     opt.load_model = "models/cereal_box_resnet_140.pth"
 

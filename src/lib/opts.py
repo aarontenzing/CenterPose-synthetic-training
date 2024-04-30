@@ -153,6 +153,7 @@ class opts(object):
                                       'rotation augmentation.')
 
         # Loss
+
         self.parser.add_argument('--mse_loss', action='store_true',
                                  help='use mse loss or focal loss to train '
                                       'keypoint heatmaps.')

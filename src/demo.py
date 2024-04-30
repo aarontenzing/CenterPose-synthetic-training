@@ -14,6 +14,7 @@ from lib.opts import opts
 from lib.detectors.detector_factory import detector_factory
 import glob
 import numpy as np
+import pickle
 
 image_ext = ['jpg', 'jpeg', 'png', 'webp']
 video_ext = ['mp4', 'mov', 'avi', 'mkv']
@@ -23,7 +24,6 @@ time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge', 'pnp', 'track
 def get_annotations(opt):
     with open("../../../data/synthetic_data/anno.json") as f:
         train = json.load(f)
-    
     return train
 
 def demo(opt, meta):
@@ -92,6 +92,8 @@ def demo(opt, meta):
             for stat in time_stats:
                 time_str = time_str + '{} {:.3f}s |'.format(stat, ret[stat])
             print(f'Frame {idx}|' + time_str)
+    
+    
 
 
 if __name__ == '__main__':
@@ -119,6 +121,7 @@ if __name__ == '__main__':
     # Default setting
     opt.nms = True
     opt.obj_scale = True
+    camera = False
 
     # Tracking stuff
     if opt.tracking_task == True:
@@ -150,8 +153,16 @@ if __name__ == '__main__':
         meta['camera_matrix'] = np.array(
             [[663.0287679036459, 0, 300.2775065104167], [0, 663.0287679036459, 395.00066121419275], [0, 0, 1]])
         opt.cam_intrinsic = meta['camera_matrix']
+        print("Camera Matrix: \n", meta['camera_matrix'])
     else:
         meta['camera_matrix'] = np.array(opt.cam_intrinsic).reshape(3, 3)
+
+    if camera == True:
+         # Load data from the PKL file
+        with open('cameraMatrix.pkl', 'rb') as f:
+            data = pickle.load(f)
+        meta['camera_matrix'] = data
+        print("Camera Matrix: \n", meta['camera_matrix'])
 
     opt.use_pnp = True
 

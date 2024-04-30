@@ -186,7 +186,7 @@ class ObjectPoseDataset(data.Dataset):
 
         # Functions loads images and their corresponding JSON annotations.
         def loadimages(root, datastyle="json", extensions=['png','jpg']):
-            imgs = []
+            imgs = [] # List of images and their corresponding JSON annotations 
             loadimages.extensions = extensions
 
             def add_json_files(path, ):
@@ -1050,8 +1050,8 @@ class ObjectPoseDataset(data.Dataset):
 
                     pts_ori = new_keypoints_2d
 
-                ct_ori = pts_ori[0]  # center
-                pts_ori = pts_ori[1:]  # 8 corners
+                ct_ori = pts_ori[-1]  # center
+                pts_ori = pts_ori[:8]  # 8 corners
 
                 # Change visibility, following the protocol of COCO
                 pts = np.zeros((len(pts_ori), 3), dtype='int64')
