@@ -85,11 +85,9 @@ def main(opt):
     print('Starting training...')
     best = 1e10
     for epoch in range(start_epoch + 1, opt.num_epochs + 1):
-
         mark = epoch if opt.save_all else 'last'
         log_dict_train, _, log_imgs = trainer.train(epoch, train_loader)
         logger.write('epoch: {} | '.format(epoch))  # txt logging
-
         for k, v in log_dict_train.items():
             logger.scalar_summary('train_{}'.format(k), v, epoch)  # tensorboard logging
             logger.write('train_{} {:8f} | '.format(k, v))  # txt logging
@@ -151,7 +149,7 @@ if __name__ == '__main__':
     # Training param
     opt.task = 'object_pose' # dir containing experiment dirs 
     opt.exp_id = f'objectron_{opt.c}_{opt.arch}' # dir contains logs and models
-    opt.num_epochs = 10
+    opt.num_epochs = 20
     opt.val_intervals = 1
     opt.lr_step = '90,120'
     opt.batch_size = 4

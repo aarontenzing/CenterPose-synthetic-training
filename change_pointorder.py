@@ -66,7 +66,7 @@ def main(verbose = False):
     final_json = []
     data_root = "data/synthetic_data/" 
 
-    with open(data_root + "anno.json", 'r') as f:
+    with open(data_root + "unorderd_anno.json", 'r') as f:
         data = json.load(f)
     print(f"Length before processing: {len(data)}")
     
@@ -155,7 +155,7 @@ def main(verbose = False):
     
     print(f"length after processing: {len(final_json)}")
 
-    with open(data_root + "ordered_anno.json", 'w') as f:
+    with open(data_root + "anno.json", 'w') as f:
         json.dump(final_json, f)
 
 if __name__=="__main__":

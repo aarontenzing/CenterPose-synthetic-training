@@ -8,8 +8,8 @@ import sys
 from src.tools.objectron_eval.objectron.dataset.box import Box as Boxcls
 from src.tools.objectron_eval.objectron.dataset.iou import IoU
 
-root_img="data/synthetic_data/val/"
-root_json_gt="data/synthetic_data/anno.json"
+root_img = "data/synthetic_data/test/"
+root_json_gt = "data/synthetic_data/anno.json"
 
 def get_gt_points(dict, meta, opt):
     invert_points=[]
@@ -39,7 +39,7 @@ def get_annotations():
    
 def evaluate_img(root_json_detect, img_id, verbose=False):
     img_list = os.listdir(root_img)
-    img_name = img_id + ".JPG"
+    img_name = img_id + ".jpg"
 
     if img_name not in img_list:
         print("Image not found or is not a box")
@@ -72,6 +72,7 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
     with open(root_json_detect + img_id + ".json", "r") as f:
         detection = json.load(f)
     
+    # Check if the detection has no objects:
     if len(detection["objects"]) == 0:
         print("no detection")
         return 1, 0
@@ -135,7 +136,7 @@ def main():
     args = sys.argv[1:]
 
     # Takes one argument: image id to evaluate
-    if len(args)==0 or len(args)> 1:
+    if len(args) == 0 or len(args) > 1:
         print("call function with one argument, e.g. '0587'")
         print("using default ")
     else:
@@ -168,72 +169,64 @@ def find_iou(root_json_detect, file):
 
      
 def get_statistics(dection_results, verbose=False):
-    with open(root_json_gt+"order_train_size_correct.json", "r") as f:
-        train=json.load(f)
-    print(len(train))
 
-    with open(root_json_gt+"order_val_size_correct.json", "r") as f:
-        val=json.load(f)
-    print(len(val)) 
-    json_files=os.listdir(dection_results)
+    # TRAINING & VALIDATION ANNOTATIONS:
+    with open(root_json_gt + "anno.json", "r") as f:
+        data = json.load(f)
+    print(len(data))
+
+    json_files = os.listdir(dection_results)
     print(len(json_files))
-    total_train=0
-    total_val=0
-    missed_train=0
-    missed_val=0
-    correct_train=0
-    correct_val=0
-    correct_train_50=0
-    correct_val_50=0
-    gt_fail_train=0
-    gt_fail_val=0
-    fail=[]
+
+    total_train = 0
+    total_val = 0
+    missed_train = 0
+    missed_val = 0
+    correct_train = 0
+    correct_val = 0
+    correct_train_50 = 0
+    correct_val_50 = 0
+    gt_fail_train = 0
+    gt_fail_val = 0
+    fail = []
     
+    # go through detection results, in dir "exp/":
     for file in json_files:
-        name=file.split(".")[0]
-        found=False
-        for dict in train:
-            if name in dict["image_name"]:
-              
-                found="train"
-                break
-        
-            
-        
-        if found==False:
-            for dict in val:
-                if name in dict["image_name"]:
-                   
-                    found="val"
-                    break
-        # find iou and add statistics      
-        iou=find_iou(dection_results, file)
+        name = file.split(".")[0]
+        found = False
+
+        if (int(name) >= 4300): 
+            found = "val"
+        else:
+            found = "train"
+
+        # Find IoU and add statistics      
+        iou = find_iou(dection_results, file)
         print(iou)
-        if found=="val":
-            total_val+=1
-            if iou==None:
-                gt_fail_val+=1
-            elif iou==0:
-                missed_val+=1
+        if found == "val":
+            total_val += 1
+            if iou == None:
+                gt_fail_val += 1
+            elif iou == 0:
+                missed_val += 1
             else:
-                correct_val+=iou
-                if iou>=0.5:
+                correct_val += iou
+                if iou >= 0.5:
                     correct_val_50+=1
                 else:
                     fail.append(file)
-                    
-                    
-        elif found=="train":
-            total_train+=1
-            if iou==None:
-                gt_fail_train+=1
-            elif iou==0:
-                missed_train+=1
+                         
+        elif found == "train":
+            total_train += 1
+            if iou == None:
+                gt_fail_train += 1
+            elif iou == 0:
+                missed_train += 1
             else:
-                correct_train+=iou
-                if iou>=0.5:
-                    correct_train_50+=1
-                    
+                correct_train += iou
+                if iou >= 0.5:
+                    correct_train_50 += 1
+
                 else:
                     fail.append(file)
         else:
@@ -254,16 +247,9 @@ def get_statistics(dection_results, verbose=False):
     print(f"The validation average iou is {correct_val/(total_val-missed_val-gt_fail_val)}")
     print(f"The val 50% iou {correct_val_50/(total_val-missed_val-gt_fail_val)}")
     
-    print("failed: ", fail)
-    
-    if verbose:
-        for name in fail:
-            name=name.split(".")[0]+".JPG"
-            img=plt.imread("/apollo/mle/Datasets/boxes/"+ name)
-            plt.imshow(img)
-            plt.show()
+    print("Failed: ", fail)
 
 
-if __name__=="__main__":
-    # get_statistics("demo/green_background/")
+if __name__ == "__main__":
+    # get_statistics("data/syntehtic_data/train/")
     main()

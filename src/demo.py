@@ -66,14 +66,8 @@ def demo(opt, meta):
                 break
     else:
 
-        # # Option 1: only for XX_test with a lot of sub-folders
-        # image_names = []
-        # for ext in image_ext:
-        #     file_name=glob.glob(os.path.join(opt.demo,f'**/*.{ext}'))
-        #     if file_name is not []:
-        #         image_names+=file_name
-
-        # Option 2: if we have images just under a folder, uncomment this instead
+        # Images under a folder, uncomment this instead
+        # inference on whole dir
         if os.path.isdir(opt.demo):
             image_names = []
             ls = os.listdir(opt.demo)
@@ -81,18 +75,19 @@ def demo(opt, meta):
                 ext = file_name[file_name.rfind('.') + 1:].lower()
                 if ext in image_ext:
                     image_names.append(os.path.join(opt.demo, file_name))
+        # inference on single image
         else:
             image_names = [opt.demo]
 
         detector.pause = False
         for idx, image_name in enumerate(image_names):
             # Todo: External GT input is not enabled in demo yet
-            ret = detector.run(image_name, meta_inp=meta)
+            ret = detector.run(image_name, meta_inp = meta)
             time_str = ''
             for stat in time_stats:
                 time_str = time_str + '{} {:.3f}s |'.format(stat, ret[stat])
-            print(f'Frame {idx}|' + time_str)
-    
+                print(f'Frame {idx}|' + time_str)
+        
     
 
 
@@ -121,7 +116,7 @@ if __name__ == '__main__':
     # Default setting
     opt.nms = True
     opt.obj_scale = True
-    camera = False
+    camera = True
 
     # Tracking stuff
     if opt.tracking_task == True:
