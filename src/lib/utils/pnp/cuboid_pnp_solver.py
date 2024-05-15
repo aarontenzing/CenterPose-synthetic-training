@@ -112,6 +112,7 @@ class CuboidPNPSolver(object):
 
         """
 
+
         # Fallback to default PNP algorithm base on OpenCV version
         if pnp_algorithm is None:
             if CuboidPNPSolver.cv2majorversion == 2:
@@ -144,6 +145,7 @@ class CuboidPNPSolver(object):
             # Ignore invalid points
             if (check_point_2d is None or check_point_2d[0] < -5000 or check_point_2d[1] < -5000):
                 continue
+            
             obj_2d_points.append(check_point_2d)
             obj_3d_points.append(
                 cuboid3d_points[int(i // (len(cuboid2d_points) / CuboidVertexType.TotalCornerVertexCount))])
@@ -155,7 +157,6 @@ class CuboidPNPSolver(object):
 
         # Can only do PNP if we have more than 3 valid points
         is_points_valid = valid_point_count >= self.min_required_points
-
         if is_points_valid:
 
             # Heatmap representation may have less than 6 points, in which case we have to use another pnp algorithm
@@ -196,6 +197,8 @@ class CuboidPNPSolver(object):
                 quaternion_new = self.convert_rvec_to_quaternion(rvec_new)
 
                 # OpenCV result
+                print("Translation vector: ", tvec)
+                
                 location = list(x[0] for x in tvec)
                 quaternion = self.convert_rvec_to_quaternion(rvec)
 
@@ -206,6 +209,7 @@ class CuboidPNPSolver(object):
 
                 # Todo: currently, we assume pnp fails if z<0
                 x, y, z = location
+                
                 if z < 0:
                     # # Get the opposite location
                     # location = [-x, -y, -z]
@@ -214,10 +218,10 @@ class CuboidPNPSolver(object):
                     # rotate_angle = np.pi
                     # rotate_quaternion = Quaternion.from_axis_rotation(location, rotate_angle)
                     # quaternion = rotate_quaternion.cross(quaternion)
-                    location = None
-                    quaternion = None
-                    location_new = None
-                    quaternion_new = None
+                    # location = None
+                    # quaternion = None
+                    # location_new = None
+                    # quaternion_new = None
 
                     if verbose:
                         print("PNP solution is behind the camera (Z < 0) => Fail")
@@ -233,6 +237,7 @@ class CuboidPNPSolver(object):
 
         if OPENCV_RETURN:
             # Return OpenCV result for demo
+            
             return location, quaternion, projected_points, reprojectionError
         else:
             # Return OpenGL result for eval

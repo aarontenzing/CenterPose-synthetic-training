@@ -211,7 +211,7 @@ class opts(object):
 
         self.parser.add_argument(
             '--rep_mode',
-            default=1,
+            default=1, # 1 original
             type=int,
             help="0: 8 selective representation"
                  "1: 16 all representation"  # Tracking task will still involve gaussian fitting for heatmap

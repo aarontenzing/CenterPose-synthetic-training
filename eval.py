@@ -7,22 +7,20 @@ from src.lib.opts import opts
 import sys
 from src.tools.objectron_eval.objectron.dataset.box import Box as Boxcls
 from src.tools.objectron_eval.objectron.dataset.iou import IoU
+import pickle
 
 root_img = "data/synthetic_data/test/"
-root_json_gt = "data/synthetic_data/anno.json"
+root_json_gt = "data/synthetic_data/test/anno.json"
 
 def get_gt_points(dict, meta, opt):
-    invert_points=[]
-    for i, p in enumerate(dict["points"]):
-        # invert_points.append([p[0], meta["height"]-p[1]])
-        invert_points.append([p[0], meta["height"]])
-        
-    size = np.array(dict["size"]) # object size
+    size = np.array(dict["whd"]) # object size
+    size = size/size[1]
+    points = dict["projection"][:8]
    
     try: 
         # PnP 
-        bbox= {'kps': invert_points[:8], "obj_scale": size/size[1]} # normalize y
-        projected_points, point_3d_cam, scale, points_ori, bbox = pnp_shell(opt, meta, bbox,invert_points, size/size[1], OPENCV_RETURN=False)
+        bbox= {'kps': points, "obj_scale": size} # normalize y
+        projected_points, point_3d_cam, scale, points_ori, bbox = pnp_shell(opt, meta, bbox, points, size, OPENCV_RETURN=False)
     except:
         print("GT wrong point order")
         return [0]
@@ -32,13 +30,14 @@ def get_gt_points(dict, meta, opt):
 
    
 def get_annotations():
+    # Get annotations in test/anno.json
     with open(root_json_gt, "r") as f:
         data = json.load(f)
 
     return data
    
 def evaluate_img(root_json_detect, img_id, verbose=False):
-    img_list = os.listdir(root_img)
+    img_list = [file for file in os.listdir(root_img) if file.endswith(".jpg")]
     img_name = img_id + ".jpg"
 
     if img_name not in img_list:
@@ -46,13 +45,14 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
         return 1,0
         
     annotations = get_annotations()
-    annotation = None
+    annotation = annotations[int(img_id)]
 
     # Finding the groundtruth annotation:
-    if 0 < img_id < len(annotations)-1: 
-        annotation = annotations[img_id]
-    else:
-        print("no annotation for given file")
+    # if 0 < int(img_id) < len(annotations): 
+    #     annotation = annotations[0]
+    #     print(annotation)
+    # else:
+    #     print("no annotation for given file")
 
     img = plt.imread(root_img + img_name)
 
@@ -62,9 +62,11 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
         plt.show()
 
     # Finding the annotation found after inference:
-    # check if the image has a debug file:
+    # Check if the image has a debug file:
     detections = os.listdir(root_json_detect)
-    if img_id + ".json" not in detections:
+    detect_json = img_id + ".json"
+
+    if detect_json not in detections:
         print("no detection json found")
         return 1,0
 
@@ -86,8 +88,12 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
     opt.c = "cereal_box" # category
     
     # Meta: 
-    camera_ford = np.array([[3648, 0, 2736], [0, 3648, 1824], [0, 0, 1]], dtype=np.float32)
-    meta={"width": img.shape[1],"height": img.shape[0], "camera_matrix":camera_ford }
+    # camera = np.array([[3648, 0, 2736], [0, 3648, 1824], [0, 0, 1]], dtype=np.float32)
+    # Load data from the PKL file
+    with open('cameraMatrix.pkl', 'rb') as f:
+        camera = pickle.load(f)
+
+    meta = {"width": img.shape[1],"height": img.shape[0], "camera_matrix":camera }
     
     # Get 3D GT:
     gt_points = get_gt_points(annotation, meta, opt)
@@ -96,18 +102,19 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
         return 1,0
  
     # Make box objects and determine IoU:
-    gt_box = Boxcls(gt_points)
+    gt_box = Boxcls(gt_points) # doet pnp op gt pixel coördinaten
     detect_box = Boxcls(detection_points)
 
-    iou = IoU(detect_box,gt_box) # calculate IoU:
+    iou = IoU(detect_box, gt_box) # calculate IoU:
+    result = iou.iou()
 
-    print("iou old= ", iou.iou())
+    print("Iou old= ", iou.iou())
     print(detect_box.vertices[0], gt_box.vertices[0])
     
     # Shift the box so it falls on middelpoint of detection:
     trans = gt_box.vertices[0] - detect_box.vertices[0]
 
-    print(detect_box.vertices[0]+trans)
+    print(detect_box.vertices[0] + trans)
     
     translated = []
     for i in range(len(detect_box.vertices)):
@@ -125,131 +132,109 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
     iou = IoU(detect_box,gt_box)
     result = iou.iou()
     print("IoU after shifting bbox", result)
+    input()
     img = plt.imread(root_json_detect+img_id+"_out_kps_processed_pred.png")
     return result, img
 
 
-def main():
+def write_iou(id, iou, filepath):
+    # Load JSON data from file
+    with open(filepath, 'r') as file:
+        data = json.load(file)
+
+    # Update JSON with IOU value
+    data[id]["IOU"] = iou
+
+    # Write updated JSON back to file
+    with open(filepath, 'w') as file:
+        json.dump(data, file, indent = 4)
+        print("write!")
+
+  
+def main(id):
     # Dir with detections:
     root_json_detect = "exp/"
-    img_id = "3"
-    args = sys.argv[1:]
-
-    # Takes one argument: image id to evaluate
-    if len(args) == 0 or len(args) > 1:
-        print("call function with one argument, e.g. '0587'")
-        print("using default ")
-    else:
-        img_id = args[0]
-    
+    img_id = str(id) # (0, 1, 2, 3...)
     iou, img = evaluate_img(root_json_detect, img_id)
+
+    failed = 0
     if iou == 1:
-        print("error see prints")
-    
+        print("failed to detect")
+        write_iou(int(img_id), 'None', "data/synthetic_data/test/anno.json")
     else:
+        write_iou(int(img_id), iou, "data/synthetic_data/test/anno.json")
         iou *= 100
         print(f"the intersection of union was {round(iou)}, see the plot for the result")
-        plt.imshow(img)
-        plt.show(block = False)
-        input("hit[enter] to end.")
+        
 
-    plt.close('all')
-    
 
 def find_iou(root_json_detect, file):
-    with open(root_json_detect+file, "r") as f:
-        data=json.load(f)
+    with open(root_json_detect + file, "r") as f:
+        data = json.load(f)
 
-    if len(data["objects"])==0:
-        print("no object found")
+    if len(data["objects"]) == 0:
+        print("No object found!")
         return 0
-        
-    
+
     return data["objects"][0]["IOU"]
 
      
 def get_statistics(dection_results, verbose=False):
 
-    # TRAINING & VALIDATION ANNOTATIONS:
-    with open(root_json_gt + "anno.json", "r") as f:
+    # TEST ANNOTATIONS + IOU:
+    with open(dection_results, "r") as f:
         data = json.load(f)
-    print(len(data))
+    
+    image_count = len(data)
 
-    json_files = os.listdir(dection_results)
-    print(len(json_files))
-
-    total_train = 0
-    total_val = 0
-    missed_train = 0
-    missed_val = 0
-    correct_train = 0
-    correct_val = 0
-    correct_train_50 = 0
-    correct_val_50 = 0
-    gt_fail_train = 0
-    gt_fail_val = 0
+    total_test = 0
+    missed_test = 0
+    correct_test = 0
+    correct_test_50 = 0
     fail = []
     
-    # go through detection results, in dir "exp/":
-    for file in json_files:
-        name = file.split(".")[0]
-        found = False
-
-        if (int(name) >= 4300): 
-            found = "val"
+    # Go through detection results:
+    for info in data:
+        name = int(info["image"])
+        iou = info["IOU"]
+        if iou != "None":
+            found = True
+            iou = float(iou)
         else:
-            found = "train"
+            found = False
+        print(iou)
 
         # Find IoU and add statistics      
-        iou = find_iou(dection_results, file)
-        print(iou)
-        if found == "val":
-            total_val += 1
-            if iou == None:
-                gt_fail_val += 1
-            elif iou == 0:
-                missed_val += 1
+        if found:
+            total_test += 1  
+            correct_test += float(iou)
+            if iou >= 0.5:
+                correct_test_50 += 1
             else:
-                correct_val += iou
-                if iou >= 0.5:
-                    correct_val_50+=1
-                else:
-                    fail.append(file)
-                         
-        elif found == "train":
-            total_train += 1
-            if iou == None:
-                gt_fail_train += 1
-            elif iou == 0:
-                missed_train += 1
-            else:
-                correct_train += iou
-                if iou >= 0.5:
-                    correct_train_50 += 1
-
-                else:
-                    fail.append(file)
-        else:
-            print("json not in a file")
+                fail.append(name)
+        else: 
+            total_test += 1  
+            missed_test += 1
+            fail.append(name)
+                 
         
     print()
-    print("TRAIN: ")
-    print(f"The total number of samples is {total_train}")
-    print(f"The total number of miss detections =  {missed_train}")
-    print(f"The total number of miss GT =  {gt_fail_train}")
-    print(f"The train average iou is {correct_train/(total_train-missed_train-gt_fail_train)}")
-    print(f"The train 50% iou {correct_train_50/(total_train-missed_train-gt_fail_train)}")
-    print()
-    print("VALIDATION: ")
-    print(f"The total number of samples is {total_val}")
-    print(f"The total number of miss detections =  {missed_val}")
-    print(f"The total number of miss GT =  {gt_fail_val}")
-    print(f"The validation average iou is {correct_val/(total_val-missed_val-gt_fail_val)}")
-    print(f"The val 50% iou {correct_val_50/(total_val-missed_val-gt_fail_val)}")
+    print("TEST: ") 
+    print(f"The total number of samples is {total_test}")
+    print(f"The total number of miss detections =  {missed_test}")
+    print(f"The test average found boxes is {correct_test / (total_test - missed_test)}")
+    print(f"The test 50% iou {correct_test_50 / (total_test - missed_test)}")
     
-    print("Failed: ", fail)
+    print("Failed: ", len(fail))
 
 
 if __name__ == "__main__":
-    # get_statistics("data/syntehtic_data/train/")
-    main()
+    
+    test_images = os.listdir("data/synthetic_data/test/")
+    test_images = [file for file in test_images if file.endswith(".jpg")]
+
+    # Go through images and calculate IOU and write
+    for img_id in test_images:
+        main(img_id.split('.')[0])
+
+    get_statistics("data/synthetic_data/test/anno.json")

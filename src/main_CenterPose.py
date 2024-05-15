@@ -108,7 +108,7 @@ def main(opt):
             # best model saves
             if log_dict_val[opt.metric] < best:
                 best = log_dict_val[opt.metric]
-                print("best model saved!!!!")
+                print("best model saved!")
                 save_model(os.path.join("/home/tenzing/CenterPose-synthetic-training/models", f'{opt.c}_best.pth'), epoch, model)
             else:
                 print("no improvement")
@@ -127,7 +127,7 @@ def main(opt):
     # final model saves
     if opt.save_all:
         print('Saved final model')
-        save_model(os.path.join("/home/tenzing/CenterPose-synthetic-training/models", f'{opt.c}_final.pth'), epoch, model, optimizer)
+    save_model(os.path.join("/home/tenzing/CenterPose-synthetic-training/models", f'{opt.c}_final.pth'), opt.num_epochs, model, optimizer)
 
     logger.close()
 

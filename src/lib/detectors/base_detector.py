@@ -26,7 +26,7 @@ from lib.utils.tracker_baseline import Tracker_baseline
 from lib.utils.image import draw_umich_gaussian, gaussian_radius, draw_nvidia_gaussian
 from sklearn import mixture
 import scipy
-
+from pprint import pprint
 
 class BaseDetector(object):
     def __init__(self, opt):
@@ -470,6 +470,7 @@ class BaseDetector(object):
             # run the network
             # output: the output feature maps, only used for visualizing
             # dets: output tensors after extracting peaks
+            
             output, dets, forward_time = self.process(
                 images, self.pre_images, pre_hms, pre_hm_hp, pre_inds, return_time=True)
 
@@ -548,6 +549,7 @@ class BaseDetector(object):
         if self.opt.use_pnp == True:
 
             for bbox in results:
+                pprint(bbox)
                 # Point processing according to different rep_modes
                 if self.opt.rep_mode == 0 or self.opt.rep_mode == 3 or self.opt.rep_mode == 4:
 
@@ -648,8 +650,9 @@ class BaseDetector(object):
                     points = np.array(points).reshape(-1, 3)
                     # Do not need labels for pnp
                     points_filtered = points[:, 0:2]
-
+                print("PNP! ", len(points_filtered), bbox['obj_scale'])
                 ret = pnp_shell(self.opt, meta, bbox, points_filtered, bbox['obj_scale'], OPENCV_RETURN=self.opt.show_axes)
+                # print("RETURN", ret)
                 if ret is not None:
                     boxes.append(ret)
 

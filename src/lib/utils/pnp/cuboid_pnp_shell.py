@@ -9,6 +9,7 @@ from scipy.spatial.transform import Rotation as R
 
 
 def pnp_shell(opt, meta, bbox, points_filtered, scale, OPENCV_RETURN = False):
+    
     cuboid3d = Cuboid3d(1 * np.array(scale) / scale[1])
 
     pnp_solver = \
@@ -20,6 +21,7 @@ def pnp_shell(opt, meta, bbox, points_filtered, scale, OPENCV_RETURN = False):
 
     location, quaternion, projected_points, reprojectionError = pnp_solver.solve_pnp(
         points_filtered, OPENCV_RETURN=OPENCV_RETURN)  # N * 2
+
 
     if location is not None:
 

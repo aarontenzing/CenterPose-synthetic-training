@@ -64,7 +64,7 @@ def x_variation(vlak, m_points):
         
 def main(verbose = False):
     final_json = []
-    data_root = "data/synthetic_data/" 
+    data_root = "data/synthetic_data/test/" 
 
     with open(data_root + "unorderd_anno.json", 'r') as f:
         data = json.load(f)

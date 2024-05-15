@@ -23,6 +23,7 @@ from lib.models.decode import object_pose_decode, _nms, _topk, _transpose_and_ga
 from lib.utils.post_process import object_pose_post_process
 
 from .base_detector import BaseDetector
+from pprint import pprint
 
 def soft_nms_nvidia(src_boxes, sigma=0.5, Nt=0.3, threshold=0.001, method=0):
     N = src_boxes.shape[0]
@@ -186,14 +187,16 @@ class ObjectPoseDetector(BaseDetector):
         # Todo: We use 0 here, since we only work on a single category, need to be updated
         # Group all the detection result from different scales on a single image (We only deal with one iamge input one time)
         results = []
+        # print("Beginning merge output")
         for det in detections[0]:
             if det['score'] > self.opt.vis_thresh:
                 results.append(det)
         results = np.array(results)
+        # print("before; ",results)
         if self.opt.nms or len(self.opt.test_scales) > 1:
             keep = soft_nms_nvidia(results, Nt=0.5, method=2, threshold=self.opt.vis_thresh)
             results = results[keep]
-
+        # print("after; ",results)
         return results
 
     def debug(self, debugger, images, dets, output, scale=1, pre_hms=None, pre_hm_hp=None):
@@ -357,6 +360,8 @@ class ObjectPoseDetector(BaseDetector):
     def save_results(self, debugger, image, results, image_or_path_or_tensor, dict_out=None):
         debugger.add_img(image, img_id='out_img_pred')
         for bbox in results:
+            # print(bbox['score'], self.opt.vis_thresh)
+            # pprint(bbox)
             if bbox['score'] > self.opt.vis_thresh:
                 if self.opt.reg_bbox:
 

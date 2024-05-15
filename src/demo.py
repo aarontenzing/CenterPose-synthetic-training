@@ -21,11 +21,6 @@ video_ext = ['mp4', 'mov', 'avi', 'mkv']
 time_stats = ['tot', 'load', 'pre', 'net', 'dec', 'post', 'merge', 'pnp', 'track']
 
 
-def get_annotations(opt):
-    with open("../../../data/synthetic_data/anno.json") as f:
-        train = json.load(f)
-    return train
-
 def demo(opt, meta):
     os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpus_str
     opt.debug = max(opt.debug, 1)
@@ -65,9 +60,7 @@ def demo(opt, meta):
             if cv2.waitKey(1) == 27:
                 break
     else:
-
-        # Images under a folder, uncomment this instead
-        # inference on whole dir
+        # Inference on whole dir
         if os.path.isdir(opt.demo):
             image_names = []
             ls = os.listdir(opt.demo)
@@ -82,7 +75,8 @@ def demo(opt, meta):
         detector.pause = False
         for idx, image_name in enumerate(image_names):
             # Todo: External GT input is not enabled in demo yet
-            ret = detector.run(image_name, meta_inp = meta)
+            # print("Meta", meta) -> meta just cam matrix
+            ret = detector.run(image_name, meta_inp = meta) # running detector and pnp IMPORTANT!
             time_str = ''
             for stat in time_stats:
                 time_str = time_str + '{} {:.3f}s |'.format(stat, ret[stat])
@@ -144,11 +138,12 @@ if __name__ == '__main__':
 
     # PnP related
     meta = {}
+    
     if opt.cam_intrinsic is None:
         meta['camera_matrix'] = np.array(
             [[663.0287679036459, 0, 300.2775065104167], [0, 663.0287679036459, 395.00066121419275], [0, 0, 1]])
         opt.cam_intrinsic = meta['camera_matrix']
-        print("Camera Matrix: \n", meta['camera_matrix'])
+        
     else:
         meta['camera_matrix'] = np.array(opt.cam_intrinsic).reshape(3, 3)
 
@@ -157,7 +152,8 @@ if __name__ == '__main__':
         with open('cameraMatrix.pkl', 'rb') as f:
             data = pickle.load(f)
         meta['camera_matrix'] = data
-        print("Camera Matrix: \n", meta['camera_matrix'])
+        
+    print("Camera Matrix: \n", meta['camera_matrix'])
 
     opt.use_pnp = True
 
