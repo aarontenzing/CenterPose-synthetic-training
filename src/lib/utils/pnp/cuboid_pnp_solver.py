@@ -197,7 +197,7 @@ class CuboidPNPSolver(object):
                 quaternion_new = self.convert_rvec_to_quaternion(rvec_new)
 
                 # OpenCV result
-                print("Translation vector: ", tvec)
+                # print("Translation vector: \n", tvec)
                 
                 location = list(x[0] for x in tvec)
                 quaternion = self.convert_rvec_to_quaternion(rvec)
