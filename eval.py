@@ -189,6 +189,7 @@ def get_statistics(dection_results, verbose=False):
     missed_test = 0
     failed_test = 0
     correct_test_50 = 0
+    total_iou = 0
     fail = []
     
     # Go through detection results:
@@ -204,6 +205,7 @@ def get_statistics(dection_results, verbose=False):
         # Find IoU and add statistics   
         total_test += 1  
         if found:
+            total_iou += iou
             if iou >= 0.5:
                 correct_test_50 += 1
             else:
@@ -219,8 +221,9 @@ def get_statistics(dection_results, verbose=False):
     print(f"The total number of miss detections =  {missed_test}")
     print(f"The test average found boxes is {(total_test - missed_test) / total_test}")
     print(f"The test 50% iou {correct_test_50 / (total_test - missed_test)}")
-    print("Correct 50% iou: ", correct_test_50)
-    print("Failed: ", failed_test)
+    print(f"The average iou is {total_iou/(total_test-missed_test)}")
+    print(f"Correct 50% iou:  {correct_test_50}")
+    print(f"Failed: {failed_test}")
 
 if __name__ == "__main__":
     test_images = os.listdir(root_img) 
