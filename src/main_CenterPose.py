@@ -149,10 +149,10 @@ if __name__ == '__main__':
     # Training param
     opt.task = 'object_pose' # dir containing experiment dirs 
     opt.exp_id = f'objectron_{opt.c}_{opt.arch}' # dir contains logs and models
-    opt.num_epochs = 20
+    opt.num_epochs = 60
     opt.val_intervals = 1
     opt.lr_step = '90,120'
-    opt.batch_size = 2
+    opt.batch_size = 3
     opt.lr = 6e-5
     opt.gpus = '0'
     opt.num_workers = 4
@@ -162,7 +162,7 @@ if __name__ == '__main__':
 
     # To continue
     opt.resume = True
-    opt.load_model = "models/cereal_7.pth"
+    opt.load_model = "models/filtered_synthetic_40.pth"
 
     # Copy from parse function from opts.py
     opt.gpus_str = opt.gpus

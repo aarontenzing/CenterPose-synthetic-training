@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 root_img = "data/synthetic_data/synthetic_test/"
 root_json_gt = "data/synthetic_data/synthetic_test/anno.json"
-root_json_detect = "exp/filtered_synthetic_37/"
+root_json_detect = "exp/unfiltered/"
 
 def get_gt_points(dict, meta, opt):
     size = np.array(dict["whd"]) # object size
@@ -219,20 +219,22 @@ def get_statistics(dection_results, verbose=False):
     print()
     print("TEST: ") 
     print(f"The total number of samples is {total_test}")
-    print(f"The total number of miss detections =  {missed_test}")
-    print(f"The found boxes is {(total_test - missed_test) / total_test}")
+    print(f"The total number of missed detections =  {missed_test}")
+    print(f"The % found boxes is {(total_test - missed_test) / total_test}")
     print(f"The test 50% iou {correct_test_50 / (total_test - missed_test)}")
-    print(f"The average iou is {total_iou/(total_test - missed_test)}")
+    print(f"The average iou is {total_iou / (total_test - missed_test)}")
     print(f"Correct 50% iou:  {correct_test_50}")
-    print(f"Failed: {failed_test}")
+    print(f"Failed: {failed_test}") # found but iou less then 50%
 
 if __name__ == "__main__":
     test_images = os.listdir(root_img) 
     test_images = [file for file in test_images if file.endswith(".jpg")]
     test_images = sorted(test_images, key=lambda x: int(x.split(".")[0]))
 
-    # Go through images and calculate IOU and write
-    for img_id in tqdm(test_images):
-        main(img_id.split('.')[0])
+    with tqdm(total=len(test_images), desc="Calculating IoUs") as pbar:
+        # Go through images and calculate IOU and write
+        for img_id in tqdm(test_images):
+            main(img_id.split('.')[0])
+            pbar.update(1)
 
     get_statistics(root_json_gt)
