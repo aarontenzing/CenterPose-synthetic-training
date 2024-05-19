@@ -10,10 +10,11 @@ from src.tools.objectron_eval.objectron.dataset.iou import IoU
 import pickle
 from pprint import pprint
 import cv2
+from tqdm import tqdm
 
-root_img = "data/synthetic_data/test/"
-root_json_gt = "data/synthetic_data/test/anno.json"
-root_json_detect = "exp/synthetic_20epochs/"
+root_img = "data/synthetic_data/synthetic_test/"
+root_json_gt = "data/synthetic_data/synthetic_test/anno.json"
+root_json_detect = "exp/filtered_synthetic_37/"
 
 def get_gt_points(dict, meta, opt):
     size = np.array(dict["whd"]) # object size
@@ -105,13 +106,13 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
     iou = IoU(detect_box, gt_box) # calculate IoU:
     result = iou.iou()
 
-    print("Iou old= ", iou.iou())
-    print(detect_box.vertices[0], gt_box.vertices[0])
+    # print("Iou old= ", iou.iou())
+    # print(detect_box.vertices[0], gt_box.vertices[0])
     
     # Shift the box so it falls on middelpoint of detection:
     trans = gt_box.vertices[0] - detect_box.vertices[0]
 
-    print(detect_box.vertices[0] + trans)
+    # print(detect_box.vertices[0] + trans)
     
     translated = []
     for i in range(len(detect_box.vertices)):
@@ -119,16 +120,16 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
     
     translated = np.array(translated)
     detect_box = Boxcls(translated)
-    print("translated points: \n", translated)
-    print("volume detected", detect_box.volume)
-    print("volume GT",gt_box.volume)
+    # print("translated points: \n", translated)
+    # print("volume detected", detect_box.volume)
+    # print("volume GT",gt_box.volume)
     
-    print("scale detected", detect_box.scale)
-    print("scale GT",gt_box.scale)
+    # print("scale detected", detect_box.scale)
+    # print("scale GT",gt_box.scale)
     
     iou = IoU(detect_box,gt_box)
     result = iou.iou()
-    print("IoU after shifting bbox", result)
+    # print("IoU after shifting bbox", result)
 
     # input() # for evaluation purpose
 
@@ -146,7 +147,7 @@ def write_iou(id, iou, filepath):
     # Write updated JSON back to file
     with open(filepath, 'w') as file:
         json.dump(data, file, indent = 4)
-        print("write!")
+        # print("write!")
 
   
 def main(img_id):
@@ -161,7 +162,7 @@ def main(img_id):
     else:
         write_iou(int(img_id), iou, root_json_gt)
         iou *= 100
-        print(f"the intersection of union was {round(iou)}, see the plot for the result")
+        # print(f"the intersection of union was {round(iou)}, see the plot for the result")
         
 
 
@@ -219,9 +220,9 @@ def get_statistics(dection_results, verbose=False):
     print("TEST: ") 
     print(f"The total number of samples is {total_test}")
     print(f"The total number of miss detections =  {missed_test}")
-    print(f"The test average found boxes is {(total_test - missed_test) / total_test}")
+    print(f"The found boxes is {(total_test - missed_test) / total_test}")
     print(f"The test 50% iou {correct_test_50 / (total_test - missed_test)}")
-    print(f"The average iou is {total_iou/(total_test-missed_test)}")
+    print(f"The average iou is {total_iou/(total_test - missed_test)}")
     print(f"Correct 50% iou:  {correct_test_50}")
     print(f"Failed: {failed_test}")
 
@@ -231,7 +232,7 @@ if __name__ == "__main__":
     test_images = sorted(test_images, key=lambda x: int(x.split(".")[0]))
 
     # Go through images and calculate IOU and write
-    for img_id in test_images:
+    for img_id in tqdm(test_images):
         main(img_id.split('.')[0])
 
     get_statistics(root_json_gt)

@@ -651,8 +651,8 @@ class BaseDetector(object):
                     # Do not need labels for pnp
                     points_filtered = points[:, 0:2]
                 # print("PNP! ", len(points_filtered), bbox['obj_scale'])
-                print("2D points: \n", points_filtered)
-                print(bbox['obj_scale'])
+                # print("2D points: \n", points_filtered)
+                # print(bbox['obj_scale'])
                 ret = pnp_shell(self.opt, meta, bbox, points_filtered, bbox['obj_scale'], OPENCV_RETURN=self.opt.show_axes)
                 # print("RETURN", ret)
                 if ret is not None:

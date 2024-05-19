@@ -162,7 +162,7 @@ if __name__ == '__main__':
 
     # To continue
     opt.resume = True
-    opt.load_model = "models/cereal_box_resnet_140.pth"
+    opt.load_model = "models/cereal_7.pth"
 
     # Copy from parse function from opts.py
     opt.gpus_str = opt.gpus
