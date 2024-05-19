@@ -12,9 +12,9 @@ from pprint import pprint
 import cv2
 from tqdm import tqdm
 
-root_img = "data/synthetic_data/synthetic_test/"
-root_json_gt = "data/synthetic_data/synthetic_test/anno.json"
-root_json_detect = "exp/unfiltered/"
+root_img = "data/synthetic_data/real_test/"
+root_json_gt = "data/synthetic_data/real_test/anno.json"
+root_json_detect = "exp/filtered_real/"
 
 def get_gt_points(dict, meta, opt):
     size = np.array(dict["whd"]) # object size
@@ -233,7 +233,7 @@ if __name__ == "__main__":
 
     with tqdm(total=len(test_images), desc="Calculating IoUs") as pbar:
         # Go through images and calculate IOU and write
-        for img_id in tqdm(test_images):
+        for img_id in test_images:
             main(img_id.split('.')[0])
             pbar.update(1)
 
