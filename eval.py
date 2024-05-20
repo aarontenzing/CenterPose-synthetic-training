@@ -12,9 +12,9 @@ from pprint import pprint
 import cv2
 from tqdm import tqdm
 
-root_img = "data/synthetic_data/real_test/"
-root_json_gt = "data/synthetic_data/real_test/anno.json"
-root_json_detect = "exp/filtered_real/"
+root_img = "data/synthetic_data/real_test_small/"
+root_json_gt = "data/synthetic_data/real_test_small/anno.json"
+root_json_detect = "exp/test/"
 
 def get_gt_points(dict, meta, opt):
     size = np.array(dict["whd"]) # object size
@@ -191,7 +191,6 @@ def get_statistics(dection_results, verbose=False):
     failed_test = 0
     correct_test_50 = 0
     total_iou = 0
-    fail = []
     
     # Go through detection results:
     for info in data:
@@ -211,10 +210,8 @@ def get_statistics(dection_results, verbose=False):
                 correct_test_50 += 1
             else:
                 failed_test += 1
-                fail.append(name)
         else: 
-            missed_test += 1
-            fail.append(name)    
+            missed_test += 1  
 
     print()
     print("TEST: ") 
