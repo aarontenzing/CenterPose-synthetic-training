@@ -12,8 +12,8 @@ from pprint import pprint
 import cv2
 from tqdm import tqdm
 
-root_img = "data/synthetic_data/real_test_small/"
-root_json_gt = "data/synthetic_data/real_test_small/anno.json"
+root_img = "data/synthetic_data/synthetic_test/"
+root_json_gt = "data/synthetic_data/synthetic_test/anno.json"
 root_json_detect = "exp/test/"
 
 def get_gt_points(dict, meta, opt):
@@ -216,12 +216,13 @@ def get_statistics(dection_results, verbose=False):
     print()
     print("TEST: ") 
     print(f"The total number of samples is {total_test}")
-    print(f"The total number of missed detections =  {missed_test}")
-    print(f"The % found boxes is {(total_test - missed_test) / total_test}")
-    print(f"The test 50% iou {correct_test_50 / (total_test - missed_test)}")
-    print(f"The average iou is {total_iou / (total_test - missed_test)}")
-    print(f"Correct 50% iou:  {correct_test_50}")
-    print(f"Failed: {failed_test}") # found but iou less then 50%
+    print(f"The average IOU is {format(total_iou / (total_test - missed_test), '.4f')}")
+    print(f"The IOU > 50% {format(correct_test_50 / (total_test - missed_test), '.4f')}")
+    print(f"Failed: {format(failed_test / total_test, '.4f')}") # found but iou less then 50%
+    print(f"The total number of missed detections =  {format(missed_test / total_test, '.4f')}")
+    print(f"The % found boxes is {format((total_test - missed_test) / total_test, '.4f')}")
+    # print(f"Correct 50% iou:  {correct_test_50}")
+    
 
 if __name__ == "__main__":
     test_images = os.listdir(root_img) 
