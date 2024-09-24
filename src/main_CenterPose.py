@@ -149,7 +149,7 @@ if __name__ == '__main__':
     # Training param
     opt.task = 'object_pose' # dir containing experiment dirs 
     opt.exp_id = f'objectron_{opt.c}_{opt.arch}' # dir contains logs and models
-    opt.num_epochs = 60
+    opt.num_epochs = 20
     opt.val_intervals = 1
     opt.lr_step = '90,120'
     opt.batch_size = 4
@@ -162,7 +162,7 @@ if __name__ == '__main__':
 
     # To continue
     opt.resume = True
-    opt.load_model = "models/unfiltered/unfiltered_synthetic_40.pth"
+    opt.load_model = "models/cereal_box_resnet_140.pth"
 
     # Copy from parse function from opts.py
     opt.gpus_str = opt.gpus
@@ -200,7 +200,7 @@ if __name__ == '__main__':
     # opt.root_dir = os.path.join(os.path.dirname(__file__), '..')
     # opt.data_dir = os.path.join(opt.root_dir, 'data')
     # opt.exp_dir = os.path.join(opt.root_dir, 'exp', opt.task)
-    opt.exp_dir = "/media/tenzing/1TB HDD/Masterproef backup/training_unfiltered"
+    opt.exp_dir = "/media/tenzing/1TB HDD/Masterproef backup/training_200/"
 
     time_str = time.strftime('%Y-%m-%d-%H-%M')
     opt.save_dir = os.path.join(opt.exp_dir, f'{opt.exp_id}_{time_str}')

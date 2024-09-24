@@ -153,7 +153,7 @@ if __name__ == '__main__':
             data = pickle.load(f)
         meta['camera_matrix'] = data
         
-    print("Camera Matrix: \n", meta['camera_matrix'])
+    print("Camera Matrix GSM: \n", meta['camera_matrix'])
 
     opt.use_pnp = True
 

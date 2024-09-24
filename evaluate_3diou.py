@@ -12,14 +12,10 @@ from pprint import pprint
 import cv2
 from tqdm import tqdm
 
-root_img = "data/synthetic_data/synthetic_test/"
-root_json_gt = "data/synthetic_data/synthetic_test/anno.json"
-root_json_detect = "exp/test/"
 
 def get_gt_points(dict, meta, opt):
-    size = np.array(dict["whd"]) # object size
-    size = size/size[1]
-    points = dict["projection"][:8]
+    size = dict["whd"] # object size
+    points = dict["projection"][:8] # GT 2D points verices
    
     try: 
         # PnP 
@@ -29,7 +25,6 @@ def get_gt_points(dict, meta, opt):
     except:
         print("GT wrong point order")
         return [0]
-    
     
     # return the 3D world points after PnP:
     return np.array(bbox["kps_3d_cam"])
@@ -98,40 +93,45 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
     if len(gt_points) == 1:
         print("wrong annotation point order")
         return 1,0
- 
+    
     # Make box objects and determine IoU:
-    gt_box = Boxcls(gt_points) # doet pnp op gt pixel coördinaten
+    gt_box = Boxcls(gt_points) # doet pnp op gt pixel coördinaten -> om de 3D wereld coordinaten te krijgen
     detect_box = Boxcls(detection_points)
 
     iou = IoU(detect_box, gt_box) # calculate IoU:
     result = iou.iou()
 
-    # print("Iou old= ", iou.iou())
-    # print(detect_box.vertices[0], gt_box.vertices[0])
+    print("Iou old= ", iou.iou())
+    print(detect_box.vertices[0], gt_box.vertices[0])
     
-    # Shift the box so it falls on middelpoint of detection:
-    trans = gt_box.vertices[0] - detect_box.vertices[0]
-
-    # print(detect_box.vertices[0] + trans)
-    
+    # Shift the box in the z-direction so it falls on middelpoint of detection:
+    z_trans = gt_box.vertices[0][2] - detect_box.vertices[0][2]
     translated = []
     for i in range(len(detect_box.vertices)):
-        translated.append(detect_box.vertices[i]+trans)
+            translated_vertex = detect_box.vertices[i].copy()  # Assuming vertices are lists or arrays
+            translated_vertex[2] += z_trans  # Apply translation to the z component
+            translated.append(translated_vertex)
     
     translated = np.array(translated)
-    detect_box = Boxcls(translated)
+    translated_box = Boxcls(translated)
+
+    # # Shift the box so it falls on middelpoint of detection:
+    # trans = gt_box.vertices[0] - detect_box.vertices[0]
+    # translated = []
+    # for i in range(len(detect_box.vertices)):
+    #     translated.append(detect_box.vertices[i]+trans)
+    
+    # translated = np.array(translated)
+    # translated_box = Boxcls(translated)
+
     # print("translated points: \n", translated)
     # print("volume detected", detect_box.volume)
     # print("volume GT",gt_box.volume)
-    
     # print("scale detected", detect_box.scale)
     # print("scale GT",gt_box.scale)
     
-    iou = IoU(detect_box,gt_box)
+    iou = IoU(translated_box, gt_box)
     result = iou.iou()
-    # print("IoU after shifting bbox", result)
-
-    # input() # for evaluation purpose
 
     return result, img
 
@@ -183,13 +183,16 @@ def get_statistics(dection_results, verbose=False):
     with open(dection_results, "r") as f:
         data = json.load(f)
     
-    image_count = len(data)
-    print("Total amount of images: ", image_count)
+    total_test = len(data)
+    print("Total amount of images: ", total_test)
 
-    total_test = 0
     missed_test = 0
+    found_test = 0
+
     failed_test = 0
+    correct_test_25 = 0
     correct_test_50 = 0
+    correct_test_75 = 0
     total_iou = 0
     
     # Go through detection results:
@@ -198,31 +201,43 @@ def get_statistics(dection_results, verbose=False):
         iou = info["IOU"]
         if iou == "None":
             found = False
+            missed_test += 1
         else:
             found = True
             iou = float(iou)
+            found_test += 1
 
         # Find IoU and add statistics   
-        total_test += 1  
         if found:
             total_iou += iou
-            if iou >= 0.5:
-                correct_test_50 += 1
+            if iou >= 0.25:
+                correct_test_25 += 1
+                if iou >= 0.5:
+                    correct_test_50 += 1
+                    if iou >= 0.75:
+                        correct_test_75 += 1
             else:
                 failed_test += 1
-        else: 
-            missed_test += 1  
 
     print()
     print("TEST: ") 
     print(f"The total number of samples is {total_test}")
-    print(f"The average IOU is {format(total_iou / (total_test - missed_test), '.4f')}")
-    print(f"The IOU > 50% {format(correct_test_50 / (total_test - missed_test), '.4f')}")
-    print(f"Failed: {format(failed_test / total_test, '.4f')}") # found but iou less then 50%
-    print(f"The total number of missed detections =  {format(missed_test / total_test, '.4f')}")
-    print(f"The % found boxes is {format((total_test - missed_test) / total_test, '.4f')}")
-    # print(f"Correct 50% iou:  {correct_test_50}")
-    
+    print(f"The total number of missed is {missed_test}")
+    print(f"The total average IOU is {format(total_iou / (total_test), '.4f')}")
+    print(f"The IOU > 25% {format(correct_test_25 / (total_test), '.4f')}")
+    print(f"The IOU > 50% {format(correct_test_50 / (total_test), '.4f')}")
+    print(f"The IOU > 75% {format(correct_test_75 / (total_test), '.4f')}")
+    print(f"The % found boxes is {format((found_test) / total_test, '.4f')}")
+    print(f"The % missed boxes is {format((missed_test) / total_test, '.4f')}")
+
+
+test_type = "real_test"
+# test_type = "synthetic_test"
+
+root_img = "data/synthetic_data/" + test_type + "/" # CHANGE THIS
+root_json_detect = "exp/" + test_type + "/" # CHANGE THIS
+root_json_gt = root_img + "anno.json"
+
 
 if __name__ == "__main__":
     test_images = os.listdir(root_img) 
