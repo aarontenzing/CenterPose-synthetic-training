@@ -35,7 +35,34 @@ def get_annotations():
         data = json.load(f)
 
     return data
-   
+
+def translate_along_optical_axis(gt_box, detect_box):
+    optical_center = np.array([0, 0, 0])  # Optical center at world origin (0,0,0)
+    
+    # Extract center points from both boxes (assuming first element is the center)
+    center_gt = gt_box.vertices[0]  # Ground truth box center (first vertex)
+    center_detect = detect_box.vertices[0]  # Detection box center (first vertex)
+
+    # Get the optical axis (vector from optical center to the detection box center)
+    optical_line = center_detect - optical_center
+    optical_line = optical_line / np.linalg.norm(optical_line)  # Normalize the vector
+
+    # Compute the translation required to move the detection center to the ground truth center
+    translation_vector = center_gt - center_detect
+    shift_magnitude = np.dot(translation_vector, optical_line)  # Project shift on the optical axis
+
+    # Apply this translation to the detection center and all its vertices
+    translated = []
+    for vertex in detect_box.vertices:
+        translated_vertex = vertex + optical_line * shift_magnitude  # Translate along optical axis
+        translated.append(translated_vertex)
+
+    # Convert the list of translated vertices to a numpy array (if required by your Boxcls)
+    translated = np.array(translated)
+    translated_box = Boxcls(translated)
+
+    return translated_box
+
 def evaluate_img(root_json_detect, img_id, verbose=False):
     img_list = [file for file in os.listdir(root_img) if file.endswith(".jpg")]
     img_name = img_id + ".jpg"
@@ -72,7 +99,7 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
         print("no detection")
         return 1, 0
     
-    detection_points = np.array(detection["objects"][0]["kps_3d_cam"])
+    detection_points = np.array(detection["objects"][0]["kps_3d_cam"]) # detected 3d world coordinates
     
     # OPT:
     opt = opts()
@@ -89,31 +116,29 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
     
     # Get 3D GT:
     print("img_id", img_id)
-    gt_points = get_gt_points(annotation, meta, opt)
+    gt_points = get_gt_points(annotation, meta, opt) # doet pnp op gt pixel coördinaten -> om de 3D wereld coordinaten te krijgen
     if len(gt_points) == 1:
         print("wrong annotation point order")
         return 1,0
     
     # Make box objects and determine IoU:
-    gt_box = Boxcls(gt_points) # doet pnp op gt pixel coördinaten -> om de 3D wereld coordinaten te krijgen
+    gt_box = Boxcls(gt_points) 
     detect_box = Boxcls(detection_points)
 
     iou = IoU(detect_box, gt_box) # calculate IoU:
     result = iou.iou()
+    print('Old IOU:', result)
 
-    print("Iou old= ", iou.iou())
-    print(detect_box.vertices[0], gt_box.vertices[0])
-    
     # Shift the box in the z-direction so it falls on middelpoint of detection:
-    z_trans = gt_box.vertices[0][2] - detect_box.vertices[0][2]
-    translated = []
-    for i in range(len(detect_box.vertices)):
-            translated_vertex = detect_box.vertices[i].copy()  # Assuming vertices are lists or arrays
-            translated_vertex[2] += z_trans  # Apply translation to the z component
-            translated.append(translated_vertex)
+    # z_trans = gt_box.vertices[0][2] - detect_box.vertices[0][2]
+    # translated = []
+    # for i in range(len(detect_box.vertices)):
+    #         translated_vertex = detect_box.vertices[i].copy()  # Assuming vertices are lists or arrays
+    #         translated_vertex[2] += z_trans  # Apply translation to the z component
+    #         translated.append(translated_vertex)
     
-    translated = np.array(translated)
-    translated_box = Boxcls(translated)
+    # translated = np.array(translated)
+    # translated_box = Boxcls(translated)
 
     # # Shift the box so it falls on middelpoint of detection:
     # trans = gt_box.vertices[0] - detect_box.vertices[0]
@@ -129,9 +154,13 @@ def evaluate_img(root_json_detect, img_id, verbose=False):
     # print("volume GT",gt_box.volume)
     # print("scale detected", detect_box.scale)
     # print("scale GT",gt_box.scale)
+
+    # Translate via optical axis
+    translated_box = translate_along_optical_axis(gt_box, detect_box)
     
     iou = IoU(translated_box, gt_box)
     result = iou.iou()
+    print("IOU: results", result)
 
     return result, img
 
@@ -232,10 +261,11 @@ def get_statistics(dection_results, verbose=False):
 
 
 test_type = "real_test"
+experiment_folder = "real_test"
 # test_type = "synthetic_test"
 
 root_img = "data/synthetic_data/" + test_type + "/" # CHANGE THIS
-root_json_detect = "exp/" + test_type + "/" # CHANGE THIS
+root_json_detect = "exp/" + experiment_folder + "/" # CHANGE THIS
 root_json_gt = root_img + "anno.json"
 
 

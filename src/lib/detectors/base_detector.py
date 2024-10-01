@@ -549,7 +549,7 @@ class BaseDetector(object):
         if self.opt.use_pnp == True:
 
             for bbox in results:
-                pprint(bbox)
+                # pprint(bbox)
                 # Point processing according to different rep_modes
                 if self.opt.rep_mode == 0 or self.opt.rep_mode == 3 or self.opt.rep_mode == 4:
 

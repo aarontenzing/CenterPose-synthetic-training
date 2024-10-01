@@ -162,10 +162,11 @@ if __name__ == "__main__":
     # Define paths
     # ALways put one in comment of the test types
     test_type = "real_test"
+    experiment_folder = 'real_test'
     # test_type = "synthetic_test"
 
     root_gt = "data/synthetic_data/" + test_type + "/anno.json"
-    root_det = "exp/" + test_type + "/"
+    root_det = "exp/" + experiment_folder + "/"
     image = cv2.imread("data/synthetic_data/" + test_type + "/0.jpg")
 
     shape = image.shape[:2]
